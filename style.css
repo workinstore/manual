@@ -115,6 +115,24 @@ body {
 .manual.pdf-mode { width: 1000px; max-width: none; }
 .manual.pdf-mode .m-header { flex-direction: row; }
 .manual.pdf-mode .m-row, .manual.pdf-mode .m-cols { grid-template-columns: 1fr 1fr; }
+.manual.pdf-mode .m-row { gap: 24px; }
+/* tamanhos fixos (sem vw) para o PDF não depender da tela */
+.manual.pdf-mode .m-header { padding: 10px 14px 10px 24px; }
+.manual.pdf-mode .m-header h1 { font-size: 58px; }
+.manual.pdf-mode .m-header h2 { font-size: 36px; }
+.manual.pdf-mode .m-intro { font-size: 27px; }
+.manual.pdf-mode .m-box-head { font-size: 29px; }
+.manual.pdf-mode .m-warning { font-size: 25px; }
+.manual.pdf-mode .m-cols .m-steps:last-child { padding-top: 14px; }
+
+@media print {
+  body { background: #fff; padding: 0; }
+  .toolbar, .secret-dot, .overlay { display: none !important; }
+  .manual { width: 1000px; max-width: none; zoom: .75; }
+  .manual .m-header { flex-direction: row; }
+  .manual .m-row, .manual .m-cols { grid-template-columns: 1fr 1fr; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 
 /* ---------- Botão-ponto secreto ---------- */
 .secret-dot {

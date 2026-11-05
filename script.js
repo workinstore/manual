@@ -12,7 +12,13 @@ const firebaseConfig = {
   appId: "1:696207504103:web:8d24b9fe3b4d2cd2092842"
 };
 
-const ADMIN_EMAIL = "admin@admin.com";
+// E-mail do administrador armazenado apenas como hash SHA-256
+const ADMIN_HASH = "5edfa2692bdacc5e6ee805c626c50cb44cebb065f092d9a1067d89f74dacd326";
+async function sha256(t) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(t || "").trim().toLowerCase()));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+let isAdmin = false;
 const DB_PATH = "manual";
 
 /* =========================================================
@@ -92,6 +98,7 @@ function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
     db = firebase.database();
+    auth.onAuthStateChanged(async (u) => { isAdmin = !!(u && (await sha256(u.email)) === ADMIN_HASH); });
     db.ref(DB_PATH).on("value", (snap) => {
       const data = snap.val();
       content = { ...DEFAULT_CONTENT, ...(data || {}) };
@@ -113,8 +120,8 @@ document.querySelectorAll(".overlay").forEach((o) =>
 function setMsg(el, text, type) { el.textContent = text; el.className = "msg " + (type || ""); }
 
 $("#secretDot").addEventListener("click", () => {
-  if (auth && auth.currentUser && auth.currentUser.email === ADMIN_EMAIL) openAdmin();
-  else { setMsg($("#loginMsg"), ""); open("#loginModal"); $("#loginPass").focus(); }
+  if (isAdmin) openAdmin();
+  else { setMsg($("#loginMsg"), ""); open("#loginModal"); $("#loginEmail").focus(); }
 });
 
 /* ---------- Login ---------- */
@@ -123,11 +130,12 @@ $("#loginForm").addEventListener("submit", async (e) => {
   const btn = $("#loginBtn"), msg = $("#loginMsg");
   const email = $("#loginEmail").value.trim().toLowerCase();
   if (!auth) return setMsg(msg, "Firebase não configurado.", "err");
-  if (email !== ADMIN_EMAIL) return setMsg(msg, "Acesso negado.", "err");
+  if ((await sha256(email)) !== ADMIN_HASH) return setMsg(msg, "E-mail ou senha inválidos.", "err");
   btn.classList.add("loading"); setMsg(msg, "");
   try {
     await auth.signInWithEmailAndPassword(email, $("#loginPass").value);
-    $("#loginPass").value = "";
+    $("#loginPass").value = ""; $("#loginEmail").value = "";
+    isAdmin = true;
     close("#loginModal");
     openAdmin();
   } catch (err) {
@@ -194,27 +202,69 @@ $("#btnReset").addEventListener("click", () => {
   openAdmin(); content = keep;
 });
 
-$("#btnLogout").addEventListener("click", async () => { if (auth) await auth.signOut(); close("#adminModal"); });
+$("#btnLogout").addEventListener("click", async () => { if (auth) await auth.signOut(); isAdmin = false; close("#adminModal"); });
 
 /* ---------- PDF ---------- */
+// Renderiza o manual em largura fixa (layout desktop) e encaixa
+// proporcionalmente em uma página A4, sem distorção.
 $("#btnPdf").addEventListener("click", async () => {
   const btn = $("#btnPdf"), el = $("#manual");
   btn.disabled = true;
-  el.classList.add("pdf-mode");
+  // Cópia fora da tela, em largura fixa, para não herdar o tamanho da janela
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:-10000px;top:0;width:1000px;background:#fff;";
+  const clone = el.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.classList.add("pdf-mode");
+  clone.style.margin = "0";
+  holder.appendChild(clone);
+  document.body.appendChild(holder);
   try {
-    await html2pdf().set({
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const worker = html2pdf().set({
       margin: 0,
-      filename: "Guia-de-Inicializacao-OPL-FMCB.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, windowWidth: 1040 },
-      jsPDF: { unit: "px", format: [1000, 1400], hotfixes: ["px_scaling"] },
-      pagebreak: { mode: "avoid-all" }
-    }).from(el).save();
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 1000, scrollX: 0, scrollY: 0 },
+      jsPDF: { unit: "px", format: [1000, 1414], orientation: "portrait", hotfixes: ["px_scaling"] }
+    }).from(clone);
+    const canvas = await worker.toCanvas().get("canvas");
+    const pdf = await worker.toPdf().get("pdf");
+    while (pdf.internal.getNumberOfPages() > 1) pdf.deletePage(pdf.internal.getNumberOfPages());
+    pdf.setPage(1);
+    const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+    pdf.setFillColor(255, 255, 255); pdf.rect(0, 0, pw, ph, "F");
+    const m = 20, maxW = pw - m * 2, maxH = ph - m * 2;
+    const ratio = canvas.width / canvas.height;
+    let w = maxW, h = w / ratio;
+    if (h > maxH) { h = maxH; w = h * ratio; }
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", (pw - w) / 2, m, w, h);
+    pdf.save("Guia-de-Inicializacao-OPL-FMCB.pdf");
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível gerar o PDF.");
   } finally {
-    el.classList.remove("pdf-mode");
+    holder.remove();
     btn.disabled = false;
   }
 });
+
+/* ---------- Proteção: botão direito e atalhos (liberado para admin) ---------- */
+document.addEventListener("contextmenu", (e) => { if (!isAdmin) e.preventDefault(); });
+["selectstart", "dragstart", "copy", "cut"].forEach((ev) =>
+  document.addEventListener(ev, (e) => {
+    if (isAdmin || (e.target.closest && e.target.closest("input, textarea"))) return;
+    e.preventDefault();
+  }));
+document.addEventListener("keydown", (e) => {
+  if (isAdmin) return;
+  const k = (e.key || "").toLowerCase(), ctrl = e.ctrlKey || e.metaKey;
+  const block =
+    k === "f12" ||
+    (ctrl && e.shiftKey && ["i", "j", "c", "k"].includes(k)) ||
+    (e.metaKey && e.altKey && ["i", "j", "c", "u"].includes(k)) ||
+    (ctrl && ["u", "s", "p"].includes(k));
+  if (block) { e.preventDefault(); e.stopPropagation(); }
+}, true);
 
 render();
 initFirebase();
