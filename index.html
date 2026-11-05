@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guia de Inicialização – OPL & FMCB 1.8 (Funtuna)</title>
+  <meta name="description" content="Manual de inicialização do sistema OPL & FMCB 1.8 (Funtuna) para PlayStation 2.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Fira+Sans+Condensed:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="toolbar">
+    <button id="btnPdf" class="btn-pdf" type="button">⬇ Baixar PDF</button>
+  </div>
+
+  <!-- ===== MANUAL ===== -->
+  <main id="manual" class="manual">
+    <header class="m-header">
+      <div class="m-titles">
+        <h1 data-field="title"></h1>
+        <h2 data-field="subtitle"></h2>
+      </div>
+      <div class="m-qr">
+        <div class="m-bonus" data-field="bonusLabel"></div>
+        <a id="qrLink" target="_blank" rel="noopener"><img id="qrImg" alt="QR Code"></a>
+      </div>
+    </header>
+
+    <section class="m-intro" data-field="intro" data-rich></section>
+
+    <div class="m-row">
+      <section class="m-box">
+        <div class="m-box-head" data-field="m1title" data-rich></div>
+        <ol class="m-steps" data-list="m1steps"></ol>
+      </section>
+      <section class="m-box">
+        <div class="m-box-head" data-field="m2title" data-rich></div>
+        <ol class="m-steps tight" data-list="m2steps"></ol>
+      </section>
+    </div>
+
+    <section class="m-box wide">
+      <div class="m-box-head" data-field="m3title" data-rich></div>
+      <div class="m-cols">
+        <ol class="m-steps tight" data-list="m3stepsA"></ol>
+        <ol class="m-steps tight" data-list="m3stepsB" id="m3B"></ol>
+      </div>
+    </section>
+
+    <section class="m-warning" data-field="warning" data-rich></section>
+  </main>
+
+  <!-- ===== Botão-ponto secreto ===== -->
+  <button id="secretDot" class="secret-dot" type="button" aria-label="."></button>
+
+  <!-- ===== Modal de login ===== -->
+  <div id="loginModal" class="overlay hidden">
+    <form id="loginForm" class="modal small">
+      <button type="button" class="x" data-close>&times;</button>
+      <h3>Acesso restrito</h3>
+      <input id="loginEmail" type="email" placeholder="E-mail" value="admin@admin.com" required autocomplete="username">
+      <input id="loginPass" type="password" placeholder="Senha" required autocomplete="current-password">
+      <button type="submit" class="btn-main" id="loginBtn">
+        <span class="btn-label">Entrar</span><span class="spinner"></span>
+      </button>
+      <p id="loginMsg" class="msg"></p>
+    </form>
+  </div>
+
+  <!-- ===== Modal administrativo ===== -->
+  <div id="adminModal" class="overlay hidden">
+    <div class="modal large">
+      <button type="button" class="x" data-close>&times;</button>
+      <h3>Editar manual</h3>
+      <p class="hint">
+        Use HTML simples: <code>&lt;b&gt;negrito&lt;/b&gt;</code>, <code>&lt;span class="red"&gt;vermelho&lt;/span&gt;</code>, <code>&lt;br&gt;</code>.
+        Botões: <code>[R1]</code> <code>[R2]</code> <code>[X]</code> viram teclas, <code>(O)</code> vira o círculo.
+        Listas: <b>um passo por linha</b>.
+      </p>
+
+      <form id="adminForm">
+        <fieldset>
+          <legend>QR Code</legend>
+          <label>Rótulo vertical<input name="bonusLabel"></label>
+          <label>Imagem por link (URL)<input name="qrUrl" placeholder="https://..."></label>
+          <label>…ou upload (salvo em base64)<input type="file" id="qrFile" accept="image/*"></label>
+          <label>Link ao clicar no QR (opcional)<input name="qrHref" placeholder="https://..."></label>
+          <div class="qr-preview"><img id="qrPreview" alt=""><button type="button" id="qrClear" class="btn-ghost">Remover imagem</button></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Cabeçalho</legend>
+          <label>Título<input name="title"></label>
+          <label>Subtítulo<input name="subtitle"></label>
+          <label>Introdução<textarea name="intro" rows="3"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Modo 1</legend>
+          <label>Título<textarea name="m1title" rows="2"></textarea></label>
+          <label>Passos<textarea name="m1steps" rows="6"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Modo 2</legend>
+          <label>Título<textarea name="m2title" rows="2"></textarea></label>
+          <label>Passos<textarea name="m2steps" rows="7"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Modo 3</legend>
+          <label>Título<textarea name="m3title" rows="2"></textarea></label>
+          <label>Passos – coluna esquerda<textarea name="m3stepsA" rows="5"></textarea></label>
+          <label>Passos – coluna direita<textarea name="m3stepsB" rows="4"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Aviso final</legend>
+          <label>Texto<textarea name="warning" rows="5"></textarea></label>
+        </fieldset>
+
+        <div class="admin-actions">
+          <button type="button" id="btnLogout" class="btn-ghost">Sair</button>
+          <button type="button" id="btnReset" class="btn-ghost">Restaurar padrão</button>
+          <button type="submit" class="btn-main" id="saveBtn"><span class="btn-label">Salvar</span><span class="spinner"></span></button>
+        </div>
+        <p id="adminMsg" class="msg"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase (compat) + PDF -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
