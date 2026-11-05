@@ -3,13 +3,13 @@
    (Console Firebase > Configurações do projeto > Seus apps > Web)
    ========================================================= */
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000"
+  apiKey: "AIzaSyB3eCwLmdWQF_5HI8Of4A_mhxEuWfXiPgE",
+  authDomain: "manual-online-workin.firebaseapp.com",
+  databaseURL: "https://manual-online-workin-default-rtdb.firebaseio.com",
+  projectId: "manual-online-workin",
+  storageBucket: "manual-online-workin.firebasestorage.app",
+  messagingSenderId: "696207504103",
+  appId: "1:696207504103:web:8d24b9fe3b4d2cd2092842"
 };
 
 const ADMIN_EMAIL = "admin@admin.com";
