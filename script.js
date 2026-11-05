@@ -212,7 +212,7 @@ $("#btnPdf").addEventListener("click", async () => {
   btn.disabled = true;
   // Cópia fora da tela, em largura fixa, para não herdar o tamanho da janela
   const holder = document.createElement("div");
-  holder.style.cssText = "position:fixed;left:-10000px;top:0;width:1000px;background:#fff;";
+  holder.style.cssText = "position:absolute;left:-10000px;top:0;width:1000px;background:#fff;overflow:visible;";
   const clone = el.cloneNode(true);
   clone.removeAttribute("id");
   clone.classList.add("pdf-mode");
@@ -221,15 +221,20 @@ $("#btnPdf").addEventListener("click", async () => {
   document.body.appendChild(holder);
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const fullH = Math.ceil(Math.max(clone.scrollHeight, clone.getBoundingClientRect().height, holder.scrollHeight)) + 40;
     const worker = html2pdf().set({
       margin: 0,
       image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 1000, scrollX: 0, scrollY: 0 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: 1000, height: fullH, windowWidth: 1000, windowHeight: fullH, x: 0, y: 0, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "px", format: [1000, 1414], orientation: "portrait", hotfixes: ["px_scaling"] }
     }).from(clone);
     const canvas = await worker.toCanvas().get("canvas");
     const pdf = await worker.toPdf().get("pdf");
-    while (pdf.internal.getNumberOfPages() > 1) pdf.deletePage(pdf.internal.getNumberOfPages());
+    // Página nova e limpa, sem as fatias geradas automaticamente
+    const n = pdf.internal.getNumberOfPages();
+    pdf.addPage([1000, 1414], "portrait");
+    for (let i = n; i >= 1; i--) pdf.deletePage(i);
     pdf.setPage(1);
     const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
     pdf.setFillColor(255, 255, 255); pdf.rect(0, 0, pw, ph, "F");
